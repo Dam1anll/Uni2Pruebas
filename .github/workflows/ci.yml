@@ -1,57 +1,70 @@
 name: Integración Continua - Uni2
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
-  build-and-test:
+  integration-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     services:
       postgres:
         image: postgres:13
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: admin123
+          POSTGRES_PASSWORD: $ {{ secrets.TEST_DB_PASSWORD }}   # usar Secret en GitHub
           POSTGRES_DB: Uni2PruebasTest
-        ports:
-          - 5432:5432
+        # ports no es necesario en Actions, se puede omitir
         options: >-
           --health-cmd "pg_isready -U postgres -d Uni2PruebasTest"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-    steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:$ {{ secrets.TEST_DB_PASSWORD }}@localhost:5432/Uni2PruebasTest
+      NODE_ENV: test
 
-      - name: Configurar Node.js
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
-      - name: Instalar dependencias
-        run: npm install
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-      - name: Esperar a que Postgres esté listo
+      - name: Install deps
+        run: npm ci
+
+      - name: Wait for Postgres to be ready
         run: |
-          until pg_isready -h localhost -U postgres; do
-            echo "Esperando a que PostgreSQL esté disponible..."
+          for i in {1..30}; do
+            pg_isready -h localhost -p 5432 -U postgres -d Uni2PruebasTest && break
+            echo "Esperando a PostgreSQL..."
             sleep 2
           done
 
-      - name: Ejecutar migraciones
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: npm run migrate
 
-      - name: Ejecutar pruebas de integración
+      - name: Run integration tests
         env:
-          DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2PruebasTest
-          NODE_ENV: test
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: npm run test:integration
 
-
-
+      - name: Upload test results (optional)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-logs
+          path: ./logs || ./test-results || coverage || .  # ajustar según generación de logs
