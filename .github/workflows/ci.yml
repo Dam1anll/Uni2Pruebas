@@ -16,7 +16,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: admin123
-          POSTGRES_DB: Uni2Pruebas
+          POSTGRES_DB: Uni2PruebasTest
         ports:
           - 5432:5432
         options: >-
@@ -49,5 +49,5 @@ jobs:
 
       - name: Ejecutar pruebas de integración
         env:
-          DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2Pruebas
+          DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2PruebasTest
         run: npm run test:integration
