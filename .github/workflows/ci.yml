@@ -2,15 +2,13 @@ name: Integración Continua - Uni2
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   integration-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-
     services:
       postgres:
         image: postgres:13
@@ -18,44 +16,27 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD }}
           POSTGRES_DB: Uni2PruebasTest
-        # ports: - 5432:5432    # opcional en Actions
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d Uni2PruebasTest"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 5
 
     env:
-      # usar 127.0.0.1 evita resolución a ::1 (IPv6)
-      TEST_DATABASE_URL: "postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@127.0.0.1:5432/Uni2PruebasTest"
+      TEST_DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@localhost:5432/Uni2PruebasTest
       NODE_ENV: test
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install deps
         run: npm ci
-
-      - name: Wait for Postgres to be ready
-        run: |
-          for i in {1..30}; do
-            pg_isready -h 127.0.0.1 -p 5432 -U postgres -d Uni2PruebasTest && break
-            echo "Esperando a PostgreSQL... ($i/30)"
-            sleep 2
-          done
-
       - name: Run migrations
-        env:
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: npm run migrate
-
       - name: Run integration tests
-        env:
-          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         run: npm run test:integration
