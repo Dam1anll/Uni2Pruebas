@@ -1,4 +1,4 @@
-name: Integración Continua - Uni2
+name: CI - Uni2
 
 on:
   push:
