@@ -12,7 +12,7 @@ let pool;
 let app;
 
 beforeAll(async () => {
-  pool = createPool(TEST_DATABASE_URL);
+  pool = createPool(TEST_DATABASE_URsL);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS colectas (
