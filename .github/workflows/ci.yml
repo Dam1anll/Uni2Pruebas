@@ -1,15 +1,10 @@
-name: Integración Continua - Uni2
+name: CI
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+on: [push, pull_request]
 
 jobs:
-  build-and-test:
+  integration-tests:
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:13
@@ -20,34 +15,24 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd "pg_isready -U postgres -d Uni2PruebasTest"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2PruebasTest
+      NODE_ENV: test
 
     steps:
-      - name: Checkout del código
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js
+      - uses: actions/checkout@v4
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Instalar dependencias
-        run: npm install
-
-      - name: Esperar a que Postgres esté listo
-        run: |
-          until pg_isready -h localhost -U postgres; do
-            echo "Esperando a que PostgreSQL esté disponible..."
-            sleep 2
-          done
-
-      - name: Ejecutar migraciones
+          node-version: 18
+      - name: Install deps
+        run: npm ci
+      - name: Run migrations
         run: npm run migrate
-
-      - name: Ejecutar pruebas de integración
-        env:
-          DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2PruebasTest
+      - name: Run integration tests
         run: npm run test:integration
