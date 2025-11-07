@@ -37,7 +37,7 @@ describe("POST /api/colectas - integración", () => {
     const payload = {
       titulo: "Test Colecta",
       descripcion: "Descripción de prueba",
-      objetivo: 1000,
+      objetivo: -4,
     };
 
     const res = await request(app)
