@@ -49,5 +49,5 @@ jobs:
 
       - name: Ejecutar pruebas de integración
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/Uni2Pruebas
+          DATABASE_URL: postgresql://postgres:admin123@localhost:5432/Uni2Pruebas
         run: npm run test:integration
