@@ -25,7 +25,7 @@ jobs:
           --health-retries 5
 
     env:
-      TEST_DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@localhost:5432/Uni2PruebasTest
+      TEST_DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD }}@127.0.0.1:5432/Uni2PruebasTest
       NODE_ENV: test
 
     steps:
